@@ -1,10 +1,11 @@
 package server
 
 import (
-	"encoding/base64"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/jpillora/cookieauth"
 )
 
 func (server *Server) wrapLogger(handler http.Handler) http.Handler {
@@ -24,28 +25,6 @@ func (server *Server) wrapHeaders(handler http.Handler) http.Handler {
 }
 
 func (server *Server) wrapBasicAuth(handler http.Handler, credential string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
-
-		if len(token) != 2 || strings.ToLower(token[0]) != "basic" {
-			w.Header().Set("WWW-Authenticate", `Basic realm="GoTTY"`)
-			http.Error(w, "Bad Request", http.StatusUnauthorized)
-			return
-		}
-
-		payload, err := base64.StdEncoding.DecodeString(token[1])
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
-		if credential != string(payload) {
-			w.Header().Set("WWW-Authenticate", `Basic realm="GoTTY"`)
-			http.Error(w, "authorization failed", http.StatusUnauthorized)
-			return
-		}
-
-		log.Printf("Basic Authentication Succeeded: %s", r.RemoteAddr)
-		handler.ServeHTTP(w, r)
-	})
+	pair := strings.SplitN(credential, ":", 2)
+	return cookieauth.WrapWithRealm(handler, pair[0], pair[1], "GoTTY")
 }

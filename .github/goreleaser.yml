@@ -1,11 +1,11 @@
 # test this file with
 #   goreleaser --skip-publish --rm-dist --config goreleaser.yml
 builds:
-  - main: ./main.go
+  - main: .
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.CommitID={{.ShortCommit}}
+      - -s -w -X main.Version={{.Version}} -X main.CommitID={{.Commit}}
     goos:
       - linux
       - darwin
